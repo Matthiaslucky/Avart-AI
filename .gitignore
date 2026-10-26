@@ -1,0 +1,21 @@
+# Python Virtual Environment
+venv/
+env/
+ENV/
+
+# Python Caches
+__pycache__/
+*.pyc
+
+# Local AI Models & Downloads
+*.safetensors
+*.bin
+*.ckpt
+outputs/
+output/
+uploads/
+
+# IDE & OS settings
+.vscode/
+.idea/
+.DS_Store

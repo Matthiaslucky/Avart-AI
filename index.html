@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avart AI Global Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur p-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold tracking-wider text-cyan-400">AVART AI <span class="text-xs text-slate-400">GLOBAL</span></h1>
+        <div id="wallet-display" class="bg-slate-800 px-4 py-2 rounded-lg text-sm font-medium">
+            wallet ballance: <span id="wallet-balance" class="text-emerald-400 font-bold">$100.00</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start mt-6">
+        <!-- Generation Control Form -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <h2 class="text-lg font-semibold mb-4 text-slate-200">Generate Media</h2>
+            <form id="generate-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">User ID</label>
+                    <input type="text" id="user_id" value="123" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-slate-100 focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Media Type</label>
+                    <select id="media_type" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-slate-100 focus:outline-none focus:border-cyan-500">
+                        <option value="basic_image">Basic Image ($0.05)</option>
+                        <option value="pro_image">Pro Image ($0.10)</option>
+                        <option value="ai_video">AI Video ($0.75)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Prompt</label>
+                    <textarea id="prompt" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-slate-100 focus:outline-none focus:border-cyan-500">City gate at night</textarea>
+                </div>
+                <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 transition font-semibold p-3 rounded-lg text-slate-950 tracking-wide">
+                    Execute Generation
+                </button>
+            </form>
+        </div>
+
+        <!-- Live Results & Job Tracking Area -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col h-full">
+            <h2 class="text-lg font-semibold mb-4 text-slate-200">Job Status & Output</h2>
+            <div id="result-box" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-4 font-mono text-xs text-slate-400 overflow-y-auto min-h-[220px]">
+                Waiting for generation request...
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript Logic to Connect with Backend -->
+    <script>
+        document.getElementById('generate-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultBox = document.getElementById('result-box');
+            resultBox.innerHTML = '<span class="text-yellow-400">Sending request to Avart AI Engine...</span>';
+
+            const payload = {
+                user_id: document.getElementById('user_id').value,
+                prompt: document.getElementById('prompt').value,
+                media_type: document.getElementById('media_type').value
+            };
+
+            try {
+                // 1. Send the generation request
+                const response = await fetch('http://127.0.0.1:8000/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    resultBox.innerHTML = `<span class="text-rose-400 font-bold">ERROR (${response.status})</span>\n\n` + JSON.stringify(data, null, 2);
+                    return;
+                }
+                // Add this snippet right here to update the wallet balance dynamically
+                if (data.remaining_balance_usd !== undefined) {
+                    document.getElementById('wallet-balance').innerText = `$${data.remaining_balance_usd.toFixed(2)}`;
+                }
+                
+
+               const jobId = data.job_id;
+                resultBox.innerHTML = `<span class="text-cyan-400 font-bold">Job Dispatched!</span>\nJob ID: ${jobId}\nPolling for status...`;
+
+                // 2. Poll the jo b status endpoint every 2 seconds
+                const pollInterval = setInterval(async () => {
+                    try {
+                        const statusResponse = await fetch(`http://127.0.0.1:8000/api/v1/jobs/${jobId}`);
+                        const statusData = await statusResponse.json();
+
+                        resultBox.innerHTML = `<span class="text-yellow-400 font-bold">Polling Status...</span>\n\n` + JSON.stringify(statusData, null, 2);
+
+                        // Check if completed or failed
+                    if (statusData.status === 'completed' || statusData.status === 'SUCCESS' || statusData.status === 'FAILURE') {
+                        clearInterval(pollInterval);
+                        if (statusData.status === 'FAILURE' || statusData.error) {
+                            resultBox.innerHTML = `<span class="text-rose-400 font-bold">Job Failed</span>\n\n` + JSON.stringify(statusData, null, 2);
+                        } else {
+                            const outputUrl = statusData.result?.output_url || statusData.output_url;
+                            
+                            if (outputUrl) {
+                                resultBox.innerHTML = `
+                                    <span class="text-emerald-400 font-bold mb-2">SUCCESS - Job Completed!</span>
+                                    <img src="${outputUrl}" alt="Generated AI Media" class="rounded-lg max-h-48 border border-slate-800 shadow-lg mt-2">
+                                `;
+                            } else {
+                                resultBox.innerHTML = `<span class="text-emerald-400 font-bold">SUCCESS - Job Completed!</span>\n\n` + JSON.stringify(statusData, null, 2);
+                            }
+                        }
+                    }
+                } catch (pollErr) {
+                    clearInterval(pollInterval);
+                    resultBox.innerHTML = `<span class="text-rose-400 font-bold">Polling Error:</span> Lost connection to status endpoint.`;
+                }
+            }, 2000);
+
+            } catch (err) {
+                resultBox.innerHTML = `<span class="text-rose-400 font-bold">Network Error:</span> Could not connect to FastAPI server on port 8000.`;
+            }
+        });
+    </script>
+
+       
