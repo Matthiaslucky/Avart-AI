@@ -25,6 +25,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from payment import router as payment_router 
+app.include_router(payment_router)
+
 # Initialize the Media Processor for handling user uploads
 processor = MediaProcessor(upload_dir="./uploads")
 
