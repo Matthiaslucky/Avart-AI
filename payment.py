@@ -24,7 +24,7 @@ def start_payment(payload: CreditPurchaseRequest):
         plan_code = None
     elif payload.package_type == "sub_pro":
         amount_kobo = 5000 * 100 # ₦5,000 / month
-        plan_code =  # Replace with your Paystack Plan Code
+        plan_code = "PLN_9lsrqqv8i977q5w"  # Replace with your Paystack Plan Code
     else:
         raise HTTPException(status_code=400, detail="Invalid package type")
 
