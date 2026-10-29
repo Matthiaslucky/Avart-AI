@@ -2,7 +2,7 @@ import uuid
 import json
 from fastapi import APIRouter, Request, HTTPException, Header, Depends
 from pydantic import BaseModel, EmailStr
-from services.paystack import initialize_payment, verify_paystack_webhook_signature
+from paystack import initialize_payment, verify_paystack_webhook_signature
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 
