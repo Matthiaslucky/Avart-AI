@@ -67,7 +67,7 @@
 
             try {
                 // 1. Send the generation request
-                const response = await fetch('http://127.0.0.1:8000/api/generate', {
+                const response = await fetch('/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -90,7 +90,7 @@
                 // 2. Poll the jo b status endpoint every 2 seconds
                 const pollInterval = setInterval(async () => {
                     try {
-                        const statusResponse = await fetch(`http://127.0.0.1:8000/api/v1/jobs/${jobId}`);
+                        const statusResponse = await fetch(`/api/v1/jobs/${jobId}`);
                         const statusData = await statusResponse.json();
 
                         resultBox.innerHTML = `<span class="text-yellow-400 font-bold">Polling Status...</span>\n\n` + JSON.stringify(statusData, null, 2);
@@ -120,7 +120,7 @@
             }, 2000);
 
             } catch (err) {
-                resultBox.innerHTML = `<span class="text-rose-400 font-bold">Network Error:</span> Could not connect to FastAPI server on port 8000.`;
+                resultBox.innerHTML = `<span class="text-rose-400 font-bold">Network Error:</span> Could not connect to FastAPI server on port 8005.`;
             }
         });
     </script>
