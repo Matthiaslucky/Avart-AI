@@ -27,7 +27,12 @@ class ModelEngine:
         pipe = pipe.to(self.device)
 
         # Generate image
-        image = pipe(prompt).images[0]
+        image = pipe(
+            prompt,
+            num_inference_steps=15,
+            height=512,
+            width=512
+        ).images(0)    
         image.save(output_path)
         return output_path
 
