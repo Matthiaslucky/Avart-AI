@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import uuid
 from processor import MediaProcessor
@@ -30,6 +31,9 @@ app.include_router(payment_router)
 
 # Initialize the Media Processor for handling user uploads
 processor = MediaProcessor(upload_dir="./uploads")
+@app.get("/")
+async def serve_index():
+    return FileResponse("index.html")
 
 # User wallet stored in USD for worldwide accessibility
 users_db = {"123": {"email": "creator@avart.ai", "balance_usd": 100.0}}
